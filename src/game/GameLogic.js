@@ -1,69 +1,100 @@
 
 import * as THREE from 'three';
+import { Fruit } from './Fruit.js';
+import { Splatter } from './Splatter.js';
+import { SoundManager } from './SoundManager.js';
 
 export class GameLogic {
     constructor(scene, camera, onScoreUpdate) {
         this.scene = scene;
         this.camera = camera;
         this.onScoreUpdate = onScoreUpdate;
-        this.balls = [];
+
+        this.soundManager = new SoundManager();
+
+        this.fruits = [];
+        this.debris = [];
+        this.splatter = new Splatter(scene);
+
+        // Debug Cursor
+        const cursorGeo = new THREE.RingGeometry(0.1, 0.15, 32);
+        const cursorMat = new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.DoubleSide });
+        this.debugCursor = new THREE.Mesh(cursorGeo, cursorMat);
+        this.debugCursor.visible = false;
+        this.scene.add(this.debugCursor);
+
         this.score = 0;
         this.lastSpawnTime = 0;
-        this.spawnInterval = 1000; // ms
+        this.spawnInterval = 1500; // Slower spawn for starters
+
+        // Asset paths
+        this.fruitTypes = [
+            { type: 'watermelon', path: '/assets/watermelon_sprite_1768331316687.png', color: 0xff0000 },
+            { type: 'peach', path: '/assets/peach_sprite_1768331331131.png', color: 0xffcc00 },
+            { type: 'grape', path: '/assets/grape_sprite_1768331344173.png', color: 0x800080 }
+        ];
     }
 
     update(time, handLandmarks) {
-        this.spawnBalls(time);
-        this.updateBalls(time);
+        this.spawnFruits(time);
+        this.updateFruits();
+        this.updateDebris();
+        this.splatter.update();
         this.checkCollisions(handLandmarks);
     }
 
-    spawnBalls(time) {
+    spawnFruits(time) {
         if (time - this.lastSpawnTime > this.spawnInterval) {
-            this.createBall();
+            // Speed up over time?
+            if (this.spawnInterval > 800) this.spawnInterval -= 10;
+
+            this.createFruit();
             this.lastSpawnTime = time;
         }
     }
 
-    createBall() {
-        const geometry = new THREE.SphereGeometry(0.3, 32, 32);
-        const material = new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff });
-        const ball = new THREE.Mesh(geometry, material);
+    createFruit() {
+        const typeData = this.fruitTypes[Math.floor(Math.random() * this.fruitTypes.length)];
 
-        // Random position within view at Z=0
-        // Visible height at z=0 (camera z=5)
-        // vFOV = camera.fov (75)
-        // height = 2 * tan(fov/2) * distance
         const dist = this.camera.position.z;
         const vFOV = THREE.MathUtils.degToRad(this.camera.fov);
         const height = 2 * Math.tan(vFOV / 2) * dist;
         const width = height * this.camera.aspect;
 
-        ball.position.x = (Math.random() - 0.5) * width;
-        ball.position.y = (Math.random() - 0.5) * height; // Start somewhere visible
-        // Maybe pop out from bottom? For now just static or floating up.
-        ball.position.y = -height / 2 - 0.5; // Start below
-        ball.position.z = 0;
+        const boundary = { width, height };
 
-        ball.userData = { velocity: new THREE.Vector3(0, (Math.random() * 0.02 + 0.01), 0) };
+        const fruit = new Fruit(typeData.type, typeData.path, this.scene, boundary);
+        // Attach color for splash
+        fruit.splashColor = typeData.color;
 
-        this.scene.add(ball);
-        this.balls.push(ball);
+        this.fruits.push(fruit);
     }
 
-    updateBalls(time) {
-        const dist = this.camera.position.z;
-        const vFOV = THREE.MathUtils.degToRad(this.camera.fov);
-        const height = 2 * Math.tan(vFOV / 2) * dist;
+    updateFruits() {
+        for (let i = this.fruits.length - 1; i >= 0; i--) {
+            const fruit = this.fruits[i];
+            fruit.update();
+            if (!fruit.isActive) {
+                // If it wasn't sliced (just went off screen), remove it
+                if (fruit.mesh.parent) this.scene.remove(fruit.mesh); // Should handle self-removal but double check
+                this.fruits.splice(i, 1);
+            }
+        }
+    }
 
-        for (let i = this.balls.length - 1; i >= 0; i--) {
-            const ball = this.balls[i];
-            ball.position.add(ball.userData.velocity);
+    updateDebris() {
+        for (let i = this.debris.length - 1; i >= 0; i--) {
+            const part = this.debris[i];
+            part.position.add(part.userData.velocity);
+            part.userData.velocity.y -= 0.001; // Gravity
+            part.rotation.z += part.userData.rotVel.z;
 
-            // Remove if out of view (top)
-            if (ball.position.y > height / 2 + 1) {
-                this.scene.remove(ball);
-                this.balls.splice(i, 1);
+            part.userData.life -= 0.02;
+            part.material.opacity = part.userData.life;
+
+            if (part.userData.life <= 0) {
+                this.scene.remove(part);
+                this.debris.splice(i, 1);
             }
         }
     }
@@ -86,23 +117,43 @@ export class GameLogic {
 
             const handPos = new THREE.Vector3(worldX, worldY, 0);
 
-            for (let i = this.balls.length - 1; i >= 0; i--) {
-                const ball = this.balls[i];
-                if (handPos.distanceTo(ball.position) < 0.6) { // Radius 0.3 + buffer (increased for palm)
-                    // POP!
-                    this.popBall(ball, i);
+            // Update debug cursor
+            this.debugCursor.position.copy(handPos);
+            this.debugCursor.visible = true;
+
+            for (let i = this.fruits.length - 1; i >= 0; i--) {
+                const fruit = this.fruits[i];
+                // Distance check
+                if (handPos.distanceTo(fruit.mesh.position) < 0.8) {
+                    this.sliceFruit(fruit, i, handPos);
                 }
             }
         }
-
     }
 
-    popBall(ball, index) {
-        this.scene.remove(ball);
-        this.balls.splice(index, 1);
-        this.score++;
+    sliceFruit(fruit, index, impactPos) {
+        // Impact vector relative to fruit center?
+        const impactVec = impactPos.clone().sub(fruit.mesh.position).normalize();
+
+        // Visuals
+        const debrisParts = [
+            fruit.createHalf(0, impactVec),
+            fruit.createHalf(1, impactVec)
+        ];
+        this.debris.push(...debrisParts);
+
+        // Particles
+        this.splatter.createExplosion(fruit.mesh.position, fruit.splashColor);
+
+        // Remove original
+        this.scene.remove(fruit.mesh);
+        this.fruits.splice(index, 1);
+
+        // Score
+        this.score += 10;
         if (this.onScoreUpdate) this.onScoreUpdate(this.score);
-        console.log("Score:", this.score);
-        // Add sound or particle effect later
+
+        // Play sound
+        this.soundManager.playSlice();
     }
 }
