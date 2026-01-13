@@ -77,35 +77,24 @@ export class GameLogic {
         const width = height * this.camera.aspect;
 
         for (const landmarks of handLandmarks) {
-            // Index finger tip is index 8
-            const tip = landmarks[8];
+            // Use Middle Finger MCP (Index 9) as a proxy for the Palm Center
+            const palm = landmarks[9];
 
             // Map 0..1 to world coords at Z=0
-            // MediaPipe x is 0(left) to 1(right). Three.js x is -width/2 to width/2
-            // MediaPipe y is 0(top) to 1(bottom). Three.js y is height/2 to -height/2
-
-            const handX = (tip.x - 0.5) * width * -1; // Mirror horizontally? MediaPipe matches video?
-            // Usually MediaPipe video is mirrored. If we mirrored video container with scale(-1,1),
-            // the landmarks might need adjustment or not.
-            // Let's assume standard mapping first.
-
-            // NOTE: VideoTexture is often mirrored if using user-facing camera.
-            // If we mirrored CSS, visual is good.
-            // MP landmarks: "x" is normalized.
-
-            const worldX = -(tip.x - 0.5) * width; // Flip x for mirror effect
-            const worldY = -(tip.y - 0.5) * height;
+            const worldX = -(palm.x - 0.5) * width; // Flip x for mirror effect
+            const worldY = -(palm.y - 0.5) * height;
 
             const handPos = new THREE.Vector3(worldX, worldY, 0);
 
             for (let i = this.balls.length - 1; i >= 0; i--) {
                 const ball = this.balls[i];
-                if (handPos.distanceTo(ball.position) < 0.5) { // Radius 0.3 + buffer
+                if (handPos.distanceTo(ball.position) < 0.6) { // Radius 0.3 + buffer (increased for palm)
                     // POP!
                     this.popBall(ball, i);
                 }
             }
         }
+
     }
 
     popBall(ball, index) {
