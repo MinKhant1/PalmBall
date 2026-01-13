@@ -92,9 +92,9 @@ export class GameLogic {
         if (this.onTimeUpdate) this.onTimeUpdate(Math.ceil(this.timeLeft));
 
         this.spawnObjects(time);
-        this.updateObjects();
-        this.updateDebris();
-        this.splatter.update();
+        this.updateObjects(delta); // Pass delta
+        this.updateDebris(delta); // Pass delta
+        this.splatter.update(delta); // Pass delta
         this.checkCollisions(handLandmarks);
     }
 
@@ -134,10 +134,10 @@ export class GameLogic {
         return { width, height };
     }
 
-    updateObjects() {
+    updateObjects(delta) {
         for (let i = this.fruits.length - 1; i >= 0; i--) {
             const obj = this.fruits[i];
-            obj.update();
+            obj.update(delta);
             if (!obj.isActive) {
                 if (obj.mesh.parent) this.scene.remove(obj.mesh);
                 this.fruits.splice(i, 1);
@@ -145,14 +145,23 @@ export class GameLogic {
         }
     }
 
-    updateDebris() {
+    updateDebris(delta) {
         for (let i = this.debris.length - 1; i >= 0; i--) {
             const part = this.debris[i];
-            part.position.add(part.userData.velocity);
-            part.userData.velocity.y -= 0.001;
-            part.rotation.z += part.userData.rotVel.z;
-            part.userData.life -= 0.02;
-            part.material.opacity = part.userData.life;
+
+            // Apply velocity scaled by delta
+            part.position.add(part.userData.velocity.clone().multiplyScalar(delta * 60));
+
+            // Gravity: 0.001 per frame @ 60fps ~= 0.06 per sec
+            part.userData.velocity.y -= 0.06 * delta;
+
+            // Rotation
+            part.rotation.z += part.userData.rotVel.z * delta * 60;
+
+            // Life: 0.02 per frame @ 60fps ~= 1.2 per sec
+            part.userData.life -= 1.2 * delta;
+
+            part.material.opacity = Math.max(0, part.userData.life);
             if (part.userData.life <= 0) {
                 this.scene.remove(part);
                 this.debris.splice(i, 1);

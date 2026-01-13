@@ -49,20 +49,24 @@ export class Bomb {
         const target = new THREE.Vector3((Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2, 0);
         const direction = new THREE.Vector3().subVectors(target, startPos).normalize();
 
-        const speed = 0.04 + Math.random() * 0.03; // Bombs might be slightly faster
+        // Bombs might be slightly faster
+        // Scale by 60
+        const speed = (0.04 + Math.random() * 0.03);
         this.velocity = direction.multiplyScalar(speed);
 
         this.rotationalVelocity.set(0, 0, (Math.random() - 0.5) * 0.1);
     }
 
-    update() {
+    update(delta) {
         if (!this.isActive) return;
 
-        this.mesh.position.add(this.velocity);
-        this.mesh.rotation.z += this.rotationalVelocity.z;
+        // Move with delta * 60
+        this.mesh.position.add(this.velocity.clone().multiplyScalar(delta * 60));
+        this.mesh.rotation.z += this.rotationalVelocity.z * delta * 60;
 
         // Pulsate size
-        this.pulseTime += 0.1;
+        // 0.1 per frame -> 6 * delta
+        this.pulseTime += 6 * delta;
         const scale = 1 + Math.sin(this.pulseTime) * 0.1;
         this.mesh.scale.set(scale, scale, 1);
 

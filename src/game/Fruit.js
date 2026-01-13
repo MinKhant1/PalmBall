@@ -61,18 +61,20 @@ export class Fruit {
         const direction = new THREE.Vector3().subVectors(target, startPos).normalize();
 
         // Speed varies
-        const speed = 0.03 + Math.random() * 0.04;
+        // Scale by 60 for delta time
+        const speed = (0.03 + Math.random() * 0.04);
         this.velocity = direction.multiplyScalar(speed);
 
         // Rotation
         this.rotationalVelocity.set(0, 0, (Math.random() - 0.5) * 0.1);
     }
 
-    update() {
+    update(delta) {
         if (!this.isActive) return;
 
-        this.mesh.position.add(this.velocity);
-        this.mesh.rotation.z += this.rotationalVelocity.z;
+        // Move by velocity * delta * 60 (to match previous frame-based speed)
+        this.mesh.position.add(this.velocity.clone().multiplyScalar(delta * 60));
+        this.mesh.rotation.z += this.rotationalVelocity.z * delta * 60;
 
         // Check bounds to remove
         const b = 2; // buffer

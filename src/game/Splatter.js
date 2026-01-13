@@ -31,12 +31,16 @@ export class Splatter {
         }
     }
 
-    update() {
+    update(delta) {
         for (let i = this.particles.length - 1; i >= 0; i--) {
             const p = this.particles[i];
-            p.position.add(p.userData.velocity);
-            p.userData.life -= 0.02;
-            p.scale.setScalar(p.userData.life);
+
+            // Move: scale velocity by 60
+            p.position.add(p.userData.velocity.clone().multiplyScalar(delta * 60));
+
+            // Life: 0.02 per frame -> 1.2 per second
+            p.userData.life -= 1.2 * delta;
+            p.scale.setScalar(Math.max(0, p.userData.life));
 
             if (p.userData.life <= 0) {
                 this.scene.remove(p);
