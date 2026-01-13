@@ -36,10 +36,11 @@ export class SceneManager {
         if (this.videoElement) {
             const texture = new THREE.VideoTexture(this.videoElement);
             texture.colorSpace = THREE.SRGBColorSpace;
-            // Mirror the specific texture to match CSS transform
+            // Mirror
             texture.center.set(0.5, 0.5);
             texture.repeat.set(-1, 1);
             this.scene.background = texture;
+            this.updateBackgroundAspect(texture);
         }
     }
 
@@ -47,6 +48,23 @@ export class SceneManager {
         this.camera.aspect = window.innerWidth / window.innerHeight;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(window.innerWidth, window.innerHeight);
+
+        if (this.scene.background instanceof THREE.VideoTexture) {
+            this.updateBackgroundAspect(this.scene.background);
+        }
+    }
+
+    updateBackgroundAspect(texture) {
+        // Ideally we want object-fit: cover.
+        // Video aspect vs Screen aspect.
+        // For now, simpler approach: basic mirroring is done. 
+        // AR often stretches video to fill. 
+        // If we want correct aspect, we need to scale texture UVs.
+        // Let's assume fullscreen video element handles visual, 
+        // but we are drawing scene background.
+
+        // Actually, the MediaPipe video element is hidden (display:none) and we draw it on canvas.
+        // But we initialized it as texture.
     }
 
     render() {

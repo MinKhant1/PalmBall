@@ -40,90 +40,154 @@ body {
     justify-content: space-between;
 }
 
-#score-board {
-    margin: 20px;
-    padding: 10px 20px;
+#hud-top {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    padding: 20px;
+    box-sizing: border-box;
+    pointer-events: none;
+    z-index: 10;
+}
+
+#score-board,
+#timer {
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
+    padding: 10px 20px;
     border-radius: 15px;
     border: 1px solid rgba(255, 255, 255, 0.2);
     font-size: 2rem;
     font-weight: 800;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    align-self: flex-start;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-#start-screen {
+#timer {
+    color: #ffcc00;
+}
+
+/* Start Screen */
+#start-screen,
+#game-over-screen {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(5px);
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     pointer-events: auto;
     transition: opacity 0.5s;
+    z-index: 20;
+}
+
+.logo-container {
+    text-align: center;
+    margin-bottom: 50px;
+    animation: float 3s ease-in-out infinite;
 }
 
 #start-screen h1 {
-    font-size: 4rem;
-    margin-bottom: 20px;
+    font-size: 5rem;
+    margin: 0;
     background: linear-gradient(45deg, #ff0055, #ffcc00);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+    filter: drop-shadow(0 4px 10px rgba(255, 0, 85, 0.5));
 }
 
-#start-screen p {
-    font-size: 1.5rem;
-    margin-bottom: 40px;
-    color: #eeeeee;
-}
-
-#start-btn {
-    padding: 20px 50px;
-    font-size: 1.5rem;
-    font-weight: bold;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+#start-screen h2 {
+    font-size: 2rem;
+    margin: 0;
     color: white;
-    border-radius: 30px;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    opacity: 0.8;
+}
+
+#start-btn,
+#restart-btn {
+    padding: 20px 60px;
+    font-size: 1.8rem;
+    font-weight: 900;
+    background: linear-gradient(90deg, #ff0055, #ff5500);
+    color: white;
+    border: none;
+    border-radius: 50px;
     cursor: pointer;
     transition: all 0.2s;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 0 20px rgba(255, 0, 85, 0.4);
+    text-transform: uppercase;
+    letter-spacing: 2px;
 }
 
-#start-btn:hover {
-    transform: scale(1.05);
-    background: rgba(255, 255, 255, 0.2);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+#start-btn:hover,
+#restart-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 40px rgba(255, 0, 85, 0.7);
 }
 
+#game-over-screen.hidden,
 #start-screen.hidden {
     opacity: 0;
     pointer-events: none;
 }
 
-/* Mobile adjustments */
+#vignette {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    background: radial-gradient(circle, transparent 50%, rgba(0, 0, 0, 0.8) 100%);
+    z-index: 5;
+}
+
+@keyframes float {
+    0% {
+        transform: translateY(0px);
+    }
+
+    50% {
+        transform: translateY(-20px);
+    }
+
+    100% {
+        transform: translateY(0px);
+    }
+}
+
+/* Mobile */
 @media (max-width: 600px) {
-    #score-board {
-        font-size: 1.5rem;
-        margin: 10px;
+
+    #score-board,
+    #timer {
+        font-size: 1.2rem;
+        padding: 5px 15px;
     }
 
     #start-screen h1 {
         font-size: 3rem;
     }
 
-    #start-btn {
-        padding: 15px 40px;
+    #start-screen h2 {
         font-size: 1.2rem;
+    }
+
+    #start-btn,
+    #restart-btn {
+        font-size: 1.2rem;
+        padding: 15px 40px;
     }
 }

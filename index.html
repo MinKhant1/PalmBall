@@ -10,12 +10,25 @@
 
 <body>
   <div id="ui-layer">
-    <div id="score-board">Score: 0</div>
-    <div id="start-screen">
-      <h1>PalmBall AR</h1>
-      <p>Use your hands to pop the balls!</p>
-      <button id="start-btn">Start Game</button>
+    <div id="hud-top">
+      <div id="score-board">Score: 0</div>
+      <div id="timer">Time: 60</div>
     </div>
+
+    <div id="start-screen">
+      <div class="logo-container">
+        <h1>PalmBall</h1>
+        <h2>Fruit Edition</h2>
+      </div>
+      <button id="start-btn">PLAY</button>
+    </div>
+
+    <div id="game-over-screen" class="hidden">
+      <h1>GAME OVER</h1>
+      <p>Final Score: <span id="final-score">0</span></p>
+      <button id="restart-btn">Try Again</button>
+    </div>
+    <div id="vignette"></div>
   </div>
   <div id="canvas-container"></div>
   <video class="input_video" autoplay playsinline></video>
