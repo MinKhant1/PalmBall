@@ -97,6 +97,13 @@ body {
     animation: float 3s ease-in-out infinite;
 }
 
+#studio-logo {
+    max-width: 150px;
+    height: auto;
+    margin-bottom: 20px;
+    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
+}
+
 #start-screen h1 {
     font-size: 5rem;
     margin: 0;
