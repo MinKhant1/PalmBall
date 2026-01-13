@@ -6,12 +6,13 @@ import { Splatter } from './Splatter.js';
 import { SoundManager } from './SoundManager.js';
 
 export class GameLogic {
-    constructor(scene, camera, onScoreUpdate, onGameOver, onTimeUpdate) {
+    constructor(scene, camera, onScoreUpdate, onGameOver, onTimeUpdate, onSnapshot) {
         this.scene = scene;
         this.camera = camera;
         this.onScoreUpdate = onScoreUpdate;
         this.onGameOver = onGameOver;
         this.onTimeUpdate = onTimeUpdate;
+        this.onSnapshot = onSnapshot;
 
         this.soundManager = new SoundManager();
 
@@ -37,6 +38,12 @@ export class GameLogic {
         this.lastSpawnTime = 0;
         this.spawnInterval = 1500;
 
+        // Snapshot logic
+        this.snapshotThreshold = 0;
+        this.hasTriggeredSnapshot = false;
+
+        this.lastFrameTime = performance.now();
+
         // Asset paths
         this.fruitTypes = [
             { type: 'watermelon', path: '/assets/watermelon_sprite_1768331316687.png', color: 0xff0000 },
@@ -47,18 +54,34 @@ export class GameLogic {
     }
 
     startGame() {
+        console.log('GameLogic: startGame called'); // DEBUG LOG
         this.score = 0;
         this.timeLeft = 60;
         this.isPlaying = true;
-        this.fruits.forEach(f => this.scene.remove(f.mesh));
-        this.debris.forEach(d => this.scene.remove(d));
+        try {
+            if (this.fruits) this.fruits.forEach(f => {
+                if (f && f.mesh && this.scene) this.scene.remove(f.mesh);
+            });
+            if (this.debris) this.debris.forEach(d => {
+                if (d && this.scene) this.scene.remove(d);
+            });
+        } catch (e) {
+            console.error('GameLogic: Error clearing objects', e);
+        }
         this.fruits = [];
         this.debris = [];
         this.spawnInterval = 1500;
 
+        // Random snapshot time between 10s and 50s (meaning timeLeft is between 10 and 50)
+        this.snapshotThreshold = 10 + Math.random() * 40;
+        console.log('GameLogic: snapshotThreshold set to', this.snapshotThreshold); // DEBUG LOG
+        this.hasTriggeredSnapshot = false;
+
         if (this.onScoreUpdate) this.onScoreUpdate(this.score);
         if (this.onTimeUpdate) this.onTimeUpdate(Math.ceil(this.timeLeft));
+        console.log('GameLogic: startGame finished'); // DEBUG LOG
     }
+
 
     update(time, handLandmarks, deltaTime) { // Expecting deltaTime in seconds or ms
         if (!this.isPlaying) return;
@@ -205,6 +228,12 @@ export class GameLogic {
     }
 
     sliceFruit(fruit, index, impactPos) {
+        // Snapshot Trigger
+        if (!this.hasTriggeredSnapshot && this.timeLeft <= this.snapshotThreshold) {
+            this.hasTriggeredSnapshot = true;
+            if (this.onSnapshot) this.onSnapshot();
+        }
+
         const impactVec = impactPos.clone().sub(fruit.mesh.position).normalize();
         const debrisParts = [
             fruit.createHalf(0, impactVec),
