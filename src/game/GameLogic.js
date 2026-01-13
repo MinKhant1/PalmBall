@@ -16,12 +16,17 @@ export class GameLogic {
         this.debris = [];
         this.splatter = new Splatter(scene);
 
-        // Debug Cursor
+        // Debug Cursors (pool of 2 for 2 hands)
+        this.cursors = [];
         const cursorGeo = new THREE.RingGeometry(0.1, 0.15, 32);
         const cursorMat = new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.DoubleSide });
-        this.debugCursor = new THREE.Mesh(cursorGeo, cursorMat);
-        this.debugCursor.visible = false;
-        this.scene.add(this.debugCursor);
+
+        for (let i = 0; i < 2; i++) {
+            const cursor = new THREE.Mesh(cursorGeo, cursorMat);
+            cursor.visible = false;
+            this.scene.add(cursor);
+            this.cursors.push(cursor);
+        }
 
         this.score = 0;
         this.lastSpawnTime = 0;
@@ -100,6 +105,9 @@ export class GameLogic {
     }
 
     checkCollisions(handLandmarks) {
+        // Reset cursors
+        this.cursors.forEach(c => c.visible = false);
+
         if (!handLandmarks || handLandmarks.length === 0) return;
 
         const dist = this.camera.position.z;
@@ -107,7 +115,9 @@ export class GameLogic {
         const height = 2 * Math.tan(vFOV / 2) * dist;
         const width = height * this.camera.aspect;
 
-        for (const landmarks of handLandmarks) {
+        handLandmarks.forEach((landmarks, index) => {
+            if (index >= this.cursors.length) return; // Limit to 2 hands
+
             // Use Middle Finger MCP (Index 9) as a proxy for the Palm Center
             const palm = landmarks[9];
 
@@ -118,8 +128,9 @@ export class GameLogic {
             const handPos = new THREE.Vector3(worldX, worldY, 0);
 
             // Update debug cursor
-            this.debugCursor.position.copy(handPos);
-            this.debugCursor.visible = true;
+            const cursor = this.cursors[index];
+            cursor.position.copy(handPos);
+            cursor.visible = true;
 
             for (let i = this.fruits.length - 1; i >= 0; i--) {
                 const fruit = this.fruits[i];
@@ -128,7 +139,7 @@ export class GameLogic {
                     this.sliceFruit(fruit, i, handPos);
                 }
             }
-        }
+        });
     }
 
     sliceFruit(fruit, index, impactPos) {
